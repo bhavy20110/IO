@@ -3,33 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Stream Player</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <title>Channel Player</title>
+    <style>
+        /* Simplified CSS for the player and list */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            margin: 20px 0;
+            color: #00bfff;
+        }
+        .channel-list {
+            width: 90%;
+            max-width: 600px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .channel {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #1e1e1e;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .channel:hover {
+            background-color: #333;
+        }
+        .channel img {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        .player-container {
+            width: 90%;
+            max-width: 800px;
+        }
+        video {
+            width: 100%;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
-    <h1 id="channel-name">Live Stream</h1>
-    <video id="videoPlayer" controls autoplay style="width: 100%; max-width: 600px;"></video>
-    <script>
-        const video = document.getElementById('videoPlayer');
-        const streamUrl = 'https://amit.allinonereborn.in/jiobe.m3u8?id=1091&headers=%7B%22referer%22%3A%22https%3A%2F%2F9anime.pl%22%7D'; 
+    <h1>Channel Player</h1>
+    <div class="channel-list" id="channelList"></div>
+    <div class="player-container">
+        <video id="videoPlayer" controls playsinline></video>
+    </div>
 
-        if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(proxyUrl + encodeURIComponent(streamUrl));
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                console.log('HLS manifest loaded, starting playback.');
-                video.play();
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        const channelList = document.getElementById('channelList');
+        const videoPlayer = document.getElementById('videoPlayer');
+
+        // Fetch M3U file and parse it
+        fetch('channels.m3u')
+            .then(response => response.text())
+            .then(data => {
+                const channels = parseM3U(data);
+                displayChannels(channels);
+            })
+            .catch(error => console.error('Error loading channels:', error));
+
+        // Parse M3U file
+        function parseM3U(data) {
+            const lines = data.split('\n');
+            const channels = [];
+            let currentChannel = {};
+
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.startsWith('#EXTINF:')) {
+                    const nameMatch = line.match(/,(.+)$/);
+                    const logoMatch = line.match(/tvg-logo="([^"]*)"/);
+                    if (nameMatch) currentChannel.name = nameMatch[1];
+                    if (logoMatch) currentChannel.logo = logoMatch[1];
+                } else if (line && !line.startsWith('#')) {
+                    currentChannel.url = line;
+                    channels.push(currentChannel);
+                    currentChannel = {};
+                }
             });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = proxyUrl + encodeURIComponent(streamUrl);
-            video.addEventListener('loadedmetadata', () => {
-                video.play();
+            return channels;
+        }
+
+        // Display channel list
+        function displayChannels(channels) {
+            channels.forEach(channel => {
+                const channelDiv = document.createElement('div');
+                channelDiv.classList.add('channel');
+                channelDiv.innerHTML = `
+                    <img src="${channel.logo || 'default_logo.png'}" alt="${channel.name}">
+                    <span>${channel.name}</span>
+                `;
+                channelDiv.addEventListener('click', () => playChannel(channel.url));
+                channelList.appendChild(channelDiv);
             });
-        } else {
-            alert('Your browser does not support HLS streaming.');
+        }
+
+        // Play selected channel
+        function playChannel(url) {
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(videoPlayer);
+                videoPlayer.play();
+            } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                videoPlayer.src = url;
+                videoPlayer.play();
+            } else {
+                alert('Your browser does not support HLS.');
+            }
         }
     </script>
 </body>
 </html>
-
