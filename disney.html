@@ -4,74 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Stream Player</title>
-    <!-- Video.js CSS -->
-    <link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #fff;
-            text-align: center;
-            padding: 20px;
-        }
-        .video-container {
-            margin: 20px auto;
-            max-width: 800px;
-        }
-        .footer {
-            margin-top: 20px;
-            font-size: 14px;
-        }
-        a {
-            color: #1e90ff;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
-    <h1>Live Stream Player</h1>
-    <div class="video-container">
-        <video
-            id="livePlayer"
-            class="video-js vjs-default-skin"
-            controls
-            preload="auto"
-            width="800"
-            height="450"
-            data-setup='{}'>
-        </video>
-    </div>
-    <div class="footer">
-        <p>Website made by <a href="https://t.me/BhavyaPatel77" target="_blank">Bhavya Patel</a></p>
-    </div>
-
-    <!-- Video.js JS -->
-    <script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
-    <!-- HLS Plugin -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-hls/5.15.0/videojs-contrib-hls.min.js"></script>
-
-    <!-- Custom Script -->
+    <h1 id="channel-name">Live Stream</h1>
+    <video id="videoPlayer" controls autoplay style="width: 100%; max-width: 600px;"></video>
     <script>
-        const player = videojs('livePlayer', {
-            autoplay: true,
-            controls: true,
-            responsive: true,
-            fluid: true,
-        });
+        const video = document.getElementById('videoPlayer');
+        const streamUrl = 'https://amit.allinonereborn.in/jiobe.m3u8?id=1091&headers=%7B%22referer%22%3A%22https%3A%2F%2F9anime.pl%22%7D'; 
 
-        // Set the source URL for the M3U8 stream
-        player.src({
-            src: "https://amit.allinonereborn.in/jiobe.m3u8?id=1091&headers=%7B%22referer%22%3A%22https%3A%2F%2F9anime.pl%22%7D",
-            type: "application/x-mpegURL",
-        });
-
-        // Error handling
-        player.on('error', function() {
-            console.error('An error occurred while trying to play the live stream.');
-        });
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(proxyUrl + encodeURIComponent(streamUrl));
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                console.log('HLS manifest loaded, starting playback.');
+                video.play();
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = proxyUrl + encodeURIComponent(streamUrl);
+            video.addEventListener('loadedmetadata', () => {
+                video.play();
+            });
+        } else {
+            alert('Your browser does not support HLS streaming.');
+        }
     </script>
 </body>
 </html>
+
